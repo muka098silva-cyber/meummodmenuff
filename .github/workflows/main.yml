@@ -9,29 +9,27 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Baixa o Theos COM todos os submódulos (importante para as pastas vendor)
+          # Instala as ferramentas de assinatura e compressão que faltam
+          brew install ldid xz
+          
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
           
-          # Cria o atalho do SDK
           mkdir -p $HOME/theos/sdks
           ln -s /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk $HOME/theos/sdks/iPhoneOS14.5.sdk
           
-          # Baixa o dm.pl que o erro anterior pediu
           curl -LO https://raw.githubusercontent.com/theos/theos/master/bin/dm.pl
           mv dm.pl $HOME/theos/bin/
           chmod +x $HOME/theos/bin/dm.pl
           
-          # Configura variáveis
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
 
       - name: Build Tweak
         run: |
           export THEOS=$HOME/theos
-          # Entra na pasta e força a atualização das dependências
+          # Força o update para garantir que o ldid seja reconhecido pelo motor do Theos
           cd $HOME/theos && ./bin/update-theos
           
-          # Volta para a pasta do projeto e compila
           cd $GITHUB_WORKSPACE
           make clean
           make package FINALPACKAGE=1
