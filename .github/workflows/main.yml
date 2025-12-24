@@ -9,18 +9,17 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Baixa apenas o necessário do Theos (profundidade 1 para evitar erro 128)
-          git clone --depth 1 --recursive https://github.com/theos/theos.git $HOME/theos
-          # Baixa apenas o SDK do iOS 14.5 (que é o que você precisa)
-          mkdir -p $HOME/theos/sdks
-          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.zip -o $HOME/theos/sdks/sdk.zip
-          unzip -q $HOME/theos/sdks/sdk.zip -d $HOME/theos/sdks/
-          
+          # Baixa o Theos de forma rápida
+          git clone --depth 1 --recursive https://github.com/theos/theos.git ~/theos
+          # Usa um comando simples para o SDK
+          curl -L "https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.zip" -o ~/theos/sdks/sdk.zip
+          cd ~/theos/sdks && unzip -q sdk.zip
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-          echo "$HOME/theos/bin" >> $GITHUB_PATH
 
       - name: Build Tweak
         run: |
+          export THEOS=$HOME/theos
+          # O comando 'make' puro é mais seguro para evitar erro 9
           make package FINALPACKAGE=1
         
       - name: Upload Artifact
