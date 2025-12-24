@@ -2,25 +2,27 @@ name: build
 on: [push, pull_request]
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Theos
         run: |
-          # Baixa o Theos de forma leve
+          # Baixa o Theos de forma ultra rápida
           git clone --depth 1 --recursive https://github.com/theos/theos.git $HOME/theos
           
-          # Baixa o SDK de um repositório que já vem extraído (evita o Erro 9 do unzip)
+          # Baixa os SDKs direto (método Git para não dar erro de unzip)
           git clone --depth 1 https://github.com/theos/sdks.git $HOME/theos/sdks
           
+          # Configura as variáveis para o sistema encontrar o Theos
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
 
       - name: Build Tweak
         run: |
-          # Compila o arquivo final
+          # Comando para compilar
+          export THEOS=$HOME/theos
           make package FINALPACKAGE=1
         
       - name: Upload Artifact
