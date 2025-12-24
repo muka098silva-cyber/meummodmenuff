@@ -2,19 +2,25 @@ name: build
 on: [push, pull_request]
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Theos
-        uses: theos/setup-theos-action@v1
-        with:
-          # Isso já baixa o Theos e o SDK 14.5 automaticamente sem travar
-          arch: arm64
+        run: |
+          # Baixa o Theos de forma leve
+          git clone --depth 1 --recursive https://github.com/theos/theos.git $HOME/theos
+          
+          # Baixa o SDK de um repositório que já vem extraído (evita o Erro 9 do unzip)
+          git clone --depth 1 https://github.com/theos/sdks.git $HOME/theos/sdks
+          
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin" >> $GITHUB_PATH
 
       - name: Build Tweak
         run: |
+          # Compila o arquivo final
           make package FINALPACKAGE=1
         
       - name: Upload Artifact
