@@ -9,31 +9,27 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Instala dependências necessárias
-          brew install ldid xz
+          # Instala as ferramentas de sistema
+          brew install ldid dpkg xz
           
-          # Baixa o Theos completo
+          # Baixa o Theos de forma limpa
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
           
-          # Configura o SDK do sistema
+          # Configura o SDK
           mkdir -p $HOME/theos/sdks
           ln -s /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk $HOME/theos/sdks/iPhoneOS14.5.sdk
           
-          # CORREÇÃO DEFINITIVA DO DM.PL (Cria o arquivo direto para evitar erro de diretório)
-          curl -Lo $HOME/theos/bin/dm.pl https://raw.githubusercontent.com/theos/theos/master/bin/dm.pl
-          chmod +x $HOME/theos/bin/dm.pl
-          
+          # CONFIGURAÇÃO DE AMBIENTE
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
 
       - name: Build Tweak
         run: |
           export THEOS=$HOME/theos
-          # Garante que o Theos use o dpkg-deb interno se necessário
-          export PATH=$THEOS/bin:$PATH
           
+          # Força o Theos a usar o dpkg-deb do sistema, ignorando o dm.pl quebrado
           make clean
-          make package FINALPACKAGE=1
+          make package FINALPACKAGE=1 THEOS_DEVICE_IP=localhost THEOS_PACKAGE_SCHEME=rootless
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
