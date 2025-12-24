@@ -1,6 +1,6 @@
 Package: com.samuel.mod
-Name: ModMenuTreinamento
+Name: MenuESP
 Version: 1.0
 Architecture: iphoneos-arm
 Maintainer: Samuel
-Description: Mod Menu simples para estudo.
+Description: Mod Menu
