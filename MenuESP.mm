@@ -5,25 +5,32 @@ static void init() {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         
         UIWindow *win = nil;
-        // Forma moderna de pegar a janela no iOS 13, 14, 15, 16, 17 e 18
-        if (@available(iOS 13.0, *)) {
-            for (UIWindowScene* scene in [UIApplication sharedApplication].connectedScenes) {
-                if (scene.activationState == UISceneActivationStateForegroundActive) {
-                    win = scene.windows.firstObject;
-                    break;
+        // Pega a janela principal sem usar o comando 'keyWindow'
+        for (UIWindowScene* scene in [UIApplication sharedApplication].connectedScenes) {
+            if (scene.activationState == UISceneActivationStateForegroundActive) {
+                for (UIWindow *window in scene.windows) {
+                    if (window.isKeyWindow) {
+                        win = window;
+                        break;
+                    }
                 }
             }
-        } else {
-            win = [UIApplication sharedApplication].keyWindow;
+        }
+
+        // Se não achar via Scene, tenta o fallback de segurança (janela 0)
+        if (!win && [UIApplication sharedApplication].windows.count > 0) {
+            win = [UIApplication sharedApplication].windows[0];
         }
 
         if (win) {
-            UILabel *lab = [[UILabel alloc] initWithFrame:CGRectMake(0, 50, win.frame.size.width, 30)];
-            lab.text = @"MOD CARREGADO COM SUCESSO!";
-            lab.textColor = [UIColor greenColor];
-            lab.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.7];
+            UILabel *lab = [[UILabel alloc] initWithFrame:CGRectMake(0, 100, win.frame.size.width, 40)];
+            lab.text = @"[ MENU ATIVO ]";
+            lab.textColor = [UIColor whiteColor];
+            lab.backgroundColor = [[UIColor redColor] colorWithAlphaComponent:0.8];
             lab.textAlignment = NSTextAlignmentCenter;
-            lab.font = [UIFont boldSystemFontOfSize:14];
+            lab.font = [UIFont boldSystemFontOfSize:16];
+            lab.layer.cornerRadius = 10;
+            lab.clipsToBounds = YES;
             [win addSubview:lab];
         }
     });
