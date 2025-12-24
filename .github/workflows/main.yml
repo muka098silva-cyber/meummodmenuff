@@ -9,19 +9,18 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Baixa o Theos de forma ultra rápida
-          git clone --depth 1 --recursive https://github.com/theos/theos.git $HOME/theos
+          # Baixa apenas o motor do Theos (muito leve)
+          git clone --depth 1 https://github.com/theos/theos.git $HOME/theos
           
-          # Baixa os SDKs direto (método Git para não dar erro de unzip)
-          git clone --depth 1 https://github.com/theos/sdks.git $HOME/theos/sdks
+          # Em vez de baixar o SDK, vamos usar o do próprio macOS do GitHub
+          mkdir -p $HOME/theos/sdks
+          ln -s /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk $HOME/theos/sdks/iPhoneOS14.5.sdk
           
-          # Configura as variáveis para o sistema encontrar o Theos
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
 
       - name: Build Tweak
         run: |
-          # Comando para compilar
           export THEOS=$HOME/theos
           make package FINALPACKAGE=1
         
