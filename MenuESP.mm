@@ -1,31 +1,30 @@
 #import <UIKit/UIKit.h>
 
-// Função que inicia o mod
-__attribute__((constructor))
-static void inicializarMod() {
-    // Espera 5 segundos para o jogo abrir totalmente
+// Isso evita erros de compilação em algumas versões do SDK
+@interface UIWindow (Private)
+- (void)makeKeyAndVisible;
+@end
+
+static void inicializarMenu() {
+    // Cria um alerta simples na tela quando o jogo abrir
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
         
-        UIWindow *window = [[UIApplication sharedApplication] keyWindow];
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"MOD MENU"
+                                                                       message:@"Injetado com Sucesso!"
+                                                                preferredStyle:UIAlertControllerStyleAlert];
         
-        // Cria um painel visual simples
-        UIView *painel = [[UIView alloc] initWithFrame:CGRectMake(50, 100, 200, 60)];
-        painel.backgroundColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0.8];
-        painel.layer.cornerRadius = 10;
-        painel.layer.borderWidth = 2;
-        painel.layer.borderColor = [UIColor greenColor].CGColor;
+        UIAlertAction *ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
+        [alert addAction:ok];
         
-        UILabel *texto = [[UILabel alloc] initWithFrame:painel.bounds];
-        texto.text = @"MOD ATIVO\nTOQUE COM 3 DEDOS";
-        texto.textColor = [UIColor greenColor];
-        texto.textAlignment = NSTextAlignmentCenter;
-        texto.numberOfLines = 2;
-        texto.font = [UIFont boldSystemFontOfSize:14];
-        
-        [painel addSubview:texto];
-        [window addSubview:painel];
-        
-        // Proteção para não ser detectado facilmente
-        unsetenv("DYLD_INSERT_LIBRARIES");
+        [keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
     });
+}
+
+// Construtor que injeta o código no jogo
+__attribute__((constructor))
+static void custom_init() {
+    inicializarMenu();
+    // Limpa vestígios de injeção
+    unsetenv("DYLD_INSERT_LIBRARIES");
 }
