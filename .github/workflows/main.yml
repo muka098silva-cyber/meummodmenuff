@@ -11,14 +11,20 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/theos/theos.git $HOME/theos
           mkdir -p $HOME/theos/sdks
-          # Usando o SDK nativo do Xcode do GitHub
           ln -s /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk $HOME/theos/sdks/iPhoneOS14.5.sdk
+          
+          # CORREÇÃO DO ERRO DM.PL: Baixa o script que falta
+          curl -LO https://raw.githubusercontent.com/theos/theos/master/bin/dm.pl
+          mv dm.pl $HOME/theos/bin/
+          chmod +x $HOME/theos/bin/dm.pl
+          
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin" >> $GITHUB_PATH
 
       - name: Build Tweak
         run: |
           export THEOS=$HOME/theos
-          # Limpa compilações zoadas e tenta de novo
+          # Limpa e tenta empacotar
           make clean
           make package FINALPACKAGE=1
         
