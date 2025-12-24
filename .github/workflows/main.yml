@@ -9,13 +9,16 @@ jobs:
 
       - name: Setup Theos
         run: |
-          git clone --recursive https://github.com/theos/theos.git ~/theos
-          git clone https://github.com/theos/sdks.git ~/theos/sdks
+          # Baixa o Theos de forma limpa
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          # Baixa os SDKs para dentro da pasta correta
+          git clone https://github.com/theos/sdks.git $HOME/theos/sdks
+          # Configura as variáveis de ambiente
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin" >> $GITHUB_PATH
 
       - name: Build Tweak
         run: |
-          export THEOS=$HOME/theos
           make package FINALPACKAGE=1
         
       - name: Upload Artifact
