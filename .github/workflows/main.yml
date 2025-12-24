@@ -9,11 +9,13 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Baixa o Theos de forma limpa
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos
-          # Baixa os SDKs para dentro da pasta correta
-          git clone https://github.com/theos/sdks.git $HOME/theos/sdks
-          # Configura as variáveis de ambiente
+          # Baixa apenas o necessário do Theos (profundidade 1 para evitar erro 128)
+          git clone --depth 1 --recursive https://github.com/theos/theos.git $HOME/theos
+          # Baixa apenas o SDK do iOS 14.5 (que é o que você precisa)
+          mkdir -p $HOME/theos/sdks
+          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.zip -o $HOME/theos/sdks/sdk.zip
+          unzip -q $HOME/theos/sdks/sdk.zip -d $HOME/theos/sdks/
+          
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
 
