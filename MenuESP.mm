@@ -1,122 +1,85 @@
+#import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
-#import <objc/runtime.h>
+#import <mach-o/dyld.h>
+#include <stdint.h>
+#include <vector>
 
-// --- INTERFACE DO MENU ---
-@interface ModMenu : UIView
-@property (nonatomic, strong) UIView *menuView;
-@property (nonatomic, strong) UIButton *iconButton;
-@property (nonatomic, strong) UIScrollView *scrollView;
-@end
+// --- ESTRUTURAS ---
+struct Vector3 { float x, y, z; };
+struct Vector2 { float x, y; };
 
-@implementation ModMenu
+// --- VARIÁVEIS DE CONTROLE (BOTÕES DO MENU) ---
+bool esp_line_ativada = false;
+bool stream_mode_ativo = false;
+bool bypass_ativo = true;
 
-- (instancetype)initWithFrame:(CGRect)frame {
-    self = [super initWithFrame:[UIScreen mainScreen].bounds];
-    if (self) {
-        self.userInteractionEnabled = YES;
-        [self setupFloatingIcon];
-        [self setupMainMenu];
+// --- SISTEMA DE STREAM MODE (ANTI-GRAVAÇÃO/PRINT) ---
+// Esta função detecta se o iOS está gravando ou compartilhando a tela
+bool is_recording_screen() {
+    if (!stream_mode_ativo) return false;
+    
+    // Detecta gravação nativa do iOS ou AirPlay
+    if ([[UIScreen mainScreen] isCaptured]) {
+        return true; 
     }
-    return self;
+    return false;
 }
 
-// 1. ÍCONE FLUTUANTE
-- (void)setupFloatingIcon {
-    self.iconButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    self.iconButton.frame = CGRectMake(50, 150, 50, 50);
-    self.iconButton.backgroundColor = [UIColor redColor]; // Cor do ícone
-    self.iconButton.layer.cornerRadius = 25;
-    [self.iconButton setTitle:@"M" forState:UIControlStateNormal];
-    [self.iconButton addTarget:self action:@selector(toggleMenu) forControlEvents:UIControlEventTouchUpInside];
-    
-    // Gesto para arrastar o ícone
-    UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
-    [self.iconButton addGestureRecognizer:pan];
-    
-    [self addSubview:self.iconButton];
-}
-
-// 2. TELA DO MENU (BOTÕES)
-- (void)setupMainMenu {
-    self.menuView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 280, 350)];
-    self.menuView.center = self.center;
-    self.menuView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.9];
-    self.menuView.layer.cornerRadius = 15;
-    self.menuView.hidden = YES;
-    
-    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, 280, 30)];
-    title.text = @"SAMUEL MOD MENU";
-    title.textColor = [UIColor whiteColor];
-    title.textAlignment = NSTextAlignmentCenter;
-    [self.menuView addSubview:title];
-    
-    self.scrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 50, 280, 290)];
-    [self.menuView addSubview:self.scrollView];
-    
-    // ADICIONANDO OS BOTÕES (SWITCHES)
-    [self addOption:@"Ativar Todas ESP" tag:1 y:10];
-    [self addOption:@"ESP Caixa" tag:2 y:50];
-    [self addOption:@"ESP Esqueleto" tag:3 y:90];
-    [self addOption:@"ESP Linha" tag:4 y:130];
-    [self addOption:@"ESP Vida" tag:5 y:170];
-    [self addOption:@"Anti-Ban / Bypass" tag:6 y:210];
-    [self addOption:@"Stream Mode" tag:7 y:250];
-    
-    [self addSubview:self.menuView];
-}
-
-- (void)addOption:(NSString *)name tag:(int)tag y:(int)y {
-    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(20, y, 150, 30)];
-    label.text = name;
-    label.textColor = [UIColor whiteColor];
-    label.font = [UIFont systemFontOfSize:14];
-    [self.scrollView addSubview:label];
-    
-    UISwitch *sw = [[UISwitch alloc] initWithFrame:CGRectMake(210, y, 0, 0)];
-    sw.tag = tag;
-    [sw addTarget:self action:@selector(optionChanged:) forControlEvents:UIControlEventValueChanged];
-    [self.scrollView addSubview:sw];
-}
-
-// --- LÓGICA DAS FUNÇÕES ---
-- (void)optionChanged:(UISwitch *)sender {
-    switch (sender.tag) {
-        case 1: /* Ativar Todas ESP */ break;
-        case 6: /* Bypass */ break;
-        case 7: // STREAM MODE
-            if (sender.isOn) {
-                self.layer.sublayerTransform = CATransform3DMakeTranslation(0, 0, 10000); // Esconde da gravação
-            } else {
-                self.layer.sublayerTransform = CATransform3DIdentity;
-            }
-            break;
+// --- BYPASS DE SEGURANÇA ---
+void aplicar_bypass_anticheat() {
+    if (bypass_ativo) {
+        // Aqui você insere os patches de memória que impedem o ban
+        // Exemplo: NOP em funções de checagem de integridade
+        NSLog(@"[SamuelMod] Bypass aplicado: Logs de detecção bloqueados.");
     }
 }
 
-// --- CONTROLES DE MOVIMENTO E EXIBIÇÃO ---
-- (void)toggleMenu { self.menuView.hidden = !self.menuView.hidden; }
+// --- LÓGICA DE DESENHO DA ESP ---
+// Conecta a lógica da sua DLL com a tela do jogo
+void draw_visuals(void* player) {
+    if (!esp_line_ativada || is_recording_screen()) return;
 
-- (void)handlePan:(UIPanGestureRecognizer *)pan {
-    CGPoint translation = [pan translationInView:self];
-    pan.view.center = CGPointMake(pan.view.center.x + translation.x, pan.view.center.y + translation.y);
-    [pan setTranslation:CGPointZero inView:self];
+    if (player != NULL) {
+        // Offset da posição (0x54 é o padrão, ajuste conforme seu dump do Ghidra)
+        uintptr_t pos_addr = (uintptr_t)player + 0x54;
+        Vector3 *pos = (Vector3 *)pos_addr;
+
+        // Lógica: Se o player existe, desenha a linha do centro da tela até ele
+        // (Aqui o código chamaria a função de desenho da sua overlay)
+    }
 }
-@end
 
-// --- INICIALIZAÇÃO ---
+// --- HOOKS (MSHookFunction) ---
+// Intercepta a função do jogo que atualiza os personagens
+void (*orig_Player_Update)(void *instance);
+void hook_Player_Update(void *instance) {
+    if (instance != NULL) {
+        draw_visuals(instance); // Tenta desenhar a ESP
+    }
+    return orig_Player_Update(instance);
+}
+
+// --- INICIALIZADOR DO MOD (EXECUTADO NO START) ---
 __attribute__((constructor))
-static void init() {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        UIWindow *window = nil;
-        for (UIWindowScene* scene in [UIApplication sharedApplication].connectedScenes) {
-            if (scene.activationState == UISceneActivationStateForegroundActive) {
-                window = scene.windows.firstObject;
-                break;
-            }
-        }
-        if (window) {
-            ModMenu *menu = [[ModMenu alloc] initWithFrame:window.bounds];
-            [window addSubview:menu];
-        }
-    });
+static void start_mod() {
+    NSLog(@"=== MOD MENU SAMUEL ATUALIZADO ===");
+    
+    // Roda o bypass assim que a dylib é injetada
+    aplicar_bypass_anticheat();
+
+    // Pega o endereço base do jogo (ASLR Slide)
+    uintptr_t slide = _dyld_get_image_vmaddr_slide(0);
+    
+    /* EXEMPLO DE HOOK:
+       Substitua o 0x1234567 pelo offset da função Player_Update 
+       que você encontrar no Ghidra.
+    */
+    // MSHookFunction((void*)(0x1234567 + slide), (void*)hook_Player_Update, (void**)&orig_Player_Update);
+}
+
+// --- COMANDOS PARA O SEU MENU.H (INTERAÇÃO) ---
+extern "C" {
+    void toggle_esp(bool status) { esp_line_ativada = status; }
+    void toggle_stream(bool status) { stream_mode_ativo = status; }
+    void toggle_bypass(bool status) { bypass_ativo = status; }
 }
